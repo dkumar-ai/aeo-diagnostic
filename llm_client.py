@@ -1,11 +1,6 @@
-"""
-LLM Client module to query Groq, Google Gemini, and Cohere APIs.
-"""
-
 import os
 from typing import Optional
 
-# Import LLM libraries
 try:
     from groq import Groq
 except ImportError:
@@ -35,19 +30,15 @@ Be concise and factual."""
 
 
 class GroqClient:
-    """Client for Groq API."""
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         self.client = Groq(api_key=self.api_key) if Groq else None
-    
+
     def query(self, user_query: str) -> str:
-        """Query Groq API."""
         if not self.client:
             return "Groq library not installed"
-        
         try:
             message = self.client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
@@ -64,24 +55,19 @@ class GroqClient:
 
 
 class GeminiClient:
-    """Client for Google Gemini API."""
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY not found in environment variables")
-        
+            raise ValueError("GEMINI_API_KEY not found in environment variables")
         if genai:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel("gemini-pro")
+            self.model = genai.GenerativeModel("gemini-1.5-flash")
         else:
             self.model = None
-    
+
     def query(self, user_query: str) -> str:
-        """Query Google Gemini API."""
         if not self.model:
             return "Google Generative AI library not installed"
-        
         try:
             full_prompt = f"{SYSTEM_PROMPT}\n\nUser Query: {user_query}"
             response = self.model.generate_content(full_prompt)
@@ -91,65 +77,49 @@ class GeminiClient:
 
 
 class CohereClient:
-    """Client for Cohere API."""
-    
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("COHERE_API_KEY")
         if not self.api_key:
             raise ValueError("COHERE_API_KEY not found in environment variables")
-        
         if cohere:
-            self.client = cohere.Client(api_key=self.api_key)
+            self.client = cohere.ClientV2(api_key=self.api_key)
         else:
             self.client = None
-    
+
     def query(self, user_query: str) -> str:
-        """Query Cohere API."""
         if not self.client:
             return "Cohere library not installed"
-        
         try:
             response = self.client.chat(
                 model="command-a-03-2025",
-                message=user_query,
-                preamble=SYSTEM_PROMPT
+                messages=[
+                    {"role": "user", "content": SYSTEM_PROMPT + "\n\n" + user_query}
+                ]
             )
-            return response.text
+            return response.message.content[0].text
         except Exception as e:
             return f"Error querying Cohere: {str(e)}"
 
 
 def query_all_llms(user_query: str) -> dict:
-    """
-    Query all three LLMs in parallel and return results.
-    
-    Args:
-        user_query (str): The product category query
-    
-    Returns:
-        dict: Dictionary with LLM names as keys and responses as values
-    """
     results = {}
-    
-    # Query Groq
+
     try:
         groq_client = GroqClient()
         results['Groq'] = groq_client.query(user_query)
     except Exception as e:
         results['Groq'] = f"Failed to initialize Groq: {str(e)}"
-    
-    # Query Gemini
+
     try:
         gemini_client = GeminiClient()
         results['Gemini'] = gemini_client.query(user_query)
     except Exception as e:
         results['Gemini'] = f"Failed to initialize Gemini: {str(e)}"
-    
-    # Query Cohere
+
     try:
         cohere_client = CohereClient()
         results['Cohere'] = cohere_client.query(user_query)
     except Exception as e:
         results['Cohere'] = f"Failed to initialize Cohere: {str(e)}"
-    
+
     return results

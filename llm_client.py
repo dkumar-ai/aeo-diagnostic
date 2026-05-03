@@ -50,7 +50,7 @@ class GroqClient:
         
         try:
             message = self.client.chat.completions.create(
-                model="mixtral-8x7b-32768",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": user_query}
@@ -67,7 +67,7 @@ class GeminiClient:
     """Client for Google Gemini API."""
     
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GOOGLE_API_KEY not found in environment variables")
         
@@ -110,7 +110,7 @@ class CohereClient:
         
         try:
             response = self.client.chat(
-                model="command-r",
+                model="command-a-03-2025",
                 message=user_query,
                 preamble=SYSTEM_PROMPT
             )
